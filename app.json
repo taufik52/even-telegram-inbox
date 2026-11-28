@@ -1,5 +1,5 @@
 {
-  "package_id": "com.taufik52.eventelegraminbox",
+  "package_id": "com.cipoz.tgheads",
   "edition": "202601",
   "name": "Telegram Inbox",
   "version": "0.1.0",
@@ -8,12 +8,8 @@
   "entrypoint": "index.html",
   "permissions": [
     {
-      "name": "g2-microphone",
-      "desc": "Capture audio from the glasses mic for live transcription."
-    },
-    {
       "name": "network",
-      "desc": "Reach Telegram Bot API for channel digests and AI draft approvals.",
+      "desc": "Reach Telegram Bot API (getUpdates / sendMessage) for the inbox.",
       "whitelist": [
         "https://api.telegram.org"
       ]

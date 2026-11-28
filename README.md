@@ -1,68 +1,72 @@
-# TG Heads — Telegram on Even G2 Smart Glasses
+# TG Heads — Telegram Inbox on Even G2 Smart Glasses
 
 **Heads Up: Even Realities Hackathon** (TVM Ventures × Daos Hub × Even Realities) ·
-Track **Messaging & News** · Solo · Remote · No G2 hardware — simulator only.
+Track **Messaging & News** · Solo · Remote · **No G2 hardware — simulator only.**
 
-> **Status: PREP ONLY (21 Nov 2026).** App code starts **23 Nov 2026**, per the
-> hackathon rule *"Build during the hackathon"*. What exists before 23 Nov:
-> this repo, this README, and [`PLAN.md`](PLAN.md). No app features have been
-> written yet. Anything pre-existing (libraries, APIs, starter template) is
-> listed in PLAN.md as required by the rules.
+> **Status: SPRINT MINIMAL (28 Nov 2026).** The original 7-day plan
+> ([`PLAN.md`](PLAN.md)) was not executed — no code was written 23–27 Nov.
+> On 28 Nov the scope was cut to the minimum below and built in one sprint.
+> **Demo recorded in the Even Hub simulator. No G2 glasses were available,
+> so no on-device or hands-free test was possible — the demo is a simulator
+> demo, and the submission says so.**
 
-## Vision
+## What this build does (minimal scope)
 
-Telegram, truly on your glasses. One unread message per screen, glanceable in
-seconds — and you can answer without taking your phone out: voice reply,
-approve an AI-drafted reply, or tap a quick reply. **Inbox in 30 seconds.**
+One unread Telegram message per screen on the 576×288 glasses display,
+via the **Telegram Bot API fallback only**:
 
-## The one app: three ideas, unified
+- Poll `getUpdates` → unread messages, newest first (max 20, poll every 10 s).
+- **Scroll up/down** = previous / next message.
+- **Tap** = open the message **and** send the quick reply
+  “Got it — I’ll reply soon.” (once per message, via `sendMessage`).
+- **Tap in detail view** = back to the list.
+- **Long press** = refresh now. **Double-tap** = exit (system dialog).
 
-All three track ideas live in **one glasses UI** (one card per screen, read AND
-write via voice / taps / R1 ring), with **two Telegram backends** behind it:
+**Out of scope for this sprint:** MTProto/GramJS, voice/STT, AI drafts,
+channel digests. `src/asr/stt.ts` is the unused template stub.
 
-| # | Feature | Backend | What it does |
-|---|---------|---------|--------------|
-| 1 | **Inbox in 30 Seconds** ⭐ (core) | MTProto (GramJS, your own account) | One unread message per screen (sender + 1-line preview + time). Up/Down = next message. Tap = act: 🎙️ voice reply (mic → STT → send as you), ✅ approve AI-drafted reply, 👍 quick reply. |
-| 2 | **Channel Digest** | Bot API (fallback) | AI summary (1–2 lines) of new posts from channels you follow. One digest card per screen. Tap = 👍 react / save to Saved Messages. |
-| 3 | **Triage + AI Drafts** | Bot API (fallback) | Companion bot forwards important messages; backend drafts a short reply with an LLM. Glasses show message + draft. Tap = send draft, voice = dictate your own, swipe = skip. |
+## Mock mode (honesty note)
 
-**Why two backends:** MTProto is the deepest real Telegram integration
-(full inbox — the strongest candidate for the **$1,000 Best Telegram
-Integration** prize) but carries auth/session risk. Bot API is the safe
-fallback: if MTProto auth misbehaves mid-week, the demo still runs on the
-same UI. No mock data in the demo — real Telegram, end to end.
+Without a bot token the app runs on **clearly labelled mock data** — the
+glasses text, the web UI and the demo video all say MOCK. Mock "replies"
+are simulated locally and never touch Telegram. A live demo needs the
+owner's bot token (see Setup).
 
-## Stack
+## Setup
 
-- Glasses app: **Vite + TypeScript + `@evenrealities/even_hub_sdk`** (0.0.14),
-  Even Hub CLI 0.2.0, Even Hub simulator 0.9.3 (free, no G2 needed).
-  Scaffold: official `evenhub-templates/asr` (mic → STT pipeline stub).
-- Backend (own server): Node + GramJS (`telegram`) for MTProto; Bot API via
-  grammy/telegraf for the fallback; Whisper (or Deepgram/AssemblyAI) for STT;
-  LLM for reply drafts and channel digests.
-- Glasses ↔ backend: SSE / WebSocket from our own server.
-- Packaging: `.ehpk` via `evenhub pack` (optional for submission, required
-  for Even Hub catalog distribution).
+```bash
+npm install
+cp .env.example .env.local   # fill in VITE_TELEGRAM_BOT_TOKEN (see below)
+npm run dev                  # Vite on http://localhost:5173
+```
 
-## Prizes in reach
+- **Bot token (live mode):** create a bot with [@BotFather](https://t.me/BotFather),
+  put the token in `.env.local` as `VITE_TELEGRAM_BOT_TOKEN`. The token is
+  read at runtime only — never committed, never baked into the `.ehpk`.
+- **Telegram api_id / api_hash** (https://my.telegram.org/apps) are documented
+  in `.env.example` for the future MTProto backend; this sprint does not use
+  them.
+- **Simulator:** `xvfb-run -a node node_modules/@evenrealities/evenhub-simulator/bin/index.js --automation-port 9898 http://localhost:5173`
+  (needs `libwebkit2gtk-4.1-0` on the machine). Automation API:
+  `GET /api/ping`, `GET /api/screenshot/glasses`,
+  `POST /api/input {"action":"up"|"down"|"click"|"double_click"|"long_press"}`.
 
-- Best Telegram Integration **$1,000** · Track 1st Messaging & News **$1,250**
-  + G2 · Grand Prize $2,000. (One project can win only one cash prize.)
-- Submit by **29 Nov 23:59 Dubai = 30 Nov 2026 02:59 WIB**. Demo Day 3 Dec
-  (remote demo allowed).
+## Build & pack
 
-## Security & privacy
+```bash
+npm run build   # tsc + vite build
+npm run pack    # build + evenhub pack app.json dist -o tgheads.ehpk
+```
 
-- **No secrets in this repo, ever.** No API keys, no session strings, no
-  tokens — `.ehpk` files can be extracted by anyone.
-- Telegram `api_id` / `api_hash` are created by the user at
-  [my.telegram.org](https://my.telegram.org/apps) and live only on the
-  backend server. The MTProto session string is the user's own, stored
-  mode `0600`, never committed, never pasted in chat.
-- Demo uses only the user's own account, chats, and groups. Messages from
-  other people are never shown publicly.
-- No payments, no custody, no financial advice — read-only / paper by
-  design; the app never holds user funds.
+## Submission
+
+- Public repo + this README + demo video (≤ 3 min, simulator, mock-labelled).
+- Description + max 5 feature requests: see `SUBMISSION.md`.
+- **No API keys / session strings in repo or `.ehpk`.**
+- Demo uses only the owner's own Telegram account, chats, and groups.
+- Prizes in reach: Best Telegram Integration $1,000 · Track 1st Messaging &
+  News $1,250 + G2 · Grand Prize $2,000. Submit by **30 Nov 2026 02:59 WIB**.
+  Demo Day 3 Dec (remote demo allowed).
 
 ## Links
 
@@ -70,8 +74,3 @@ same UI. No mock data in the demo — real Telegram, end to end.
 - Even Hub docs: https://hub.evenrealities.com
 - Templates: https://github.com/even-realities/evenhub-templates
 - Research notes: `~/workspace/research_notes/even-realities-telegram-track.md`
-
-## Build
-
-See [`PLAN.md`](PLAN.md) for the 7-day plan (23–29 Nov), the submit
-checklist, and the exact simulator command verified on this machine.
